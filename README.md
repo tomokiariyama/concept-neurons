@@ -1,2 +1,2 @@
-# knowledge neurons of concept
+# concept neurons
 まもなく公開いたします。
