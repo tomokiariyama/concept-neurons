@@ -1,1 +1,1 @@
-# concept_knowledge_neurons
+# knowledge_neurons_of_concept
