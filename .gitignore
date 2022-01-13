@@ -127,3 +127,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# particular directories and files
+__pycache__
+log/
+*.log
+venv/
+copy_*
+count_words.py
+pararel_evaluate.py
+plot_pararel_results.py
+example_script*
+work/
+.DS_Store
