@@ -9,7 +9,7 @@ import unicodedata
 
 def extract_dicts_from_jsonlines(file_path):
     """
-    形式の異なる4つのデータセット(trex, squad, google_RE, conceptnet)から，'subject, object, template'をキーとして持つ辞書を返す関数
+    形式の異なるデータセット(TREx, ConceptNet)から，'subject, object, template'をキーとして持つ辞書を返す関数
     """
 
     with open(file_path) as fi:
@@ -46,7 +46,6 @@ def extract_dicts_from_jsonlines(file_path):
 
             try:
                 for masked_sentence in case["masked_sentences"]:
-                    # なぜか[MASK]トークンを含まなかったり2個以上含むmasked_sentenceが存在するため（cf. Google_RE L1127, 957）
                     if masked_sentence.count("[MASK]") == 1:
                         d["masked_sentence"] = masked_sentence
                 # [MASK]トークンを一つのみ含むmasked_sentenceが見つからなかった場合は，そのcaseはskipする
@@ -80,8 +79,6 @@ def format_data_with_entity_type(entity_type, dataset_list, num_of_templates, ma
                 continue
 
             # 元のmasked sentenceに，[MASK]トークンと変換すべきsubが完全一致では含まれていない場合があるため，その場合は除く
-            # cf, Google_RE: l4070) "sub_label": "John Smith", ..., "masked_sentences": ["Born in [MASK], Ontario, Smith earned a degree in mathematics and physics from the University of [MASK] ."]
-            # ↑の例では，"masked_sentences"に完全一致で"John Smith"という語は含まれていない
             if not re.search(r, case["masked_sentence"]):
                 logger.warning(f'skipped a case which has masked_sentence with no sub_label, sub_label: {case["sub"]}, masked_sentence: {case["masked_sentence"]}')
                 continue
@@ -125,5 +122,8 @@ def format_data_with_entity_type(entity_type, dataset_list, num_of_templates, ma
 
         return d
     else:
-        logger.info("relationの知識ニューロンについては今後のtodoとします")
+        try:
+            raise ValueError("entity type is somewhat wrong")
+        except ValueError as e:
+            print(e)
         sys.exit(1)

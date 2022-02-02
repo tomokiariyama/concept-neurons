@@ -18,8 +18,8 @@ def make_parser():
 
     parser.add_argument('--seed', help='乱数のシード値, default=42', type=int, default=42)
     parser.add_argument('-mn', '--model_name', help='使用するニューラルモデルの名前, default="bert-base-uncased"', type=str, default="bert-base-uncased")
-    parser.add_argument('-dt', '--dataset_type', help="使用するデータセットを指定します", default="ConceptNet")
-    parser.add_argument('-et', '--entity_type', help="解析する対象を指定します", default="subject")
+    parser.add_argument('-dt', '--dataset_type', help="使用するデータセットを指定します", default="ConceptNet", choices=["ConceptNet", "TREx"])
+    parser.add_argument('-et', '--entity_type', help="解析する対象を指定します", default="subject", choices=["subject", "object"])
     parser.add_argument('-nt', '--number_of_templates', help='この数以上のテンプレートを持つエンティティのみを解析対象とします, default=4', type=int, default=4)
     parser.add_argument('--local_rank', help="local rank for multigpu processing, default=0", type=int, default=0)
     parser.add_argument('-ln', '--logfile_name', help="ログを保存するファイル名を指定します, default='run'", type=str, default="run")
@@ -38,9 +38,10 @@ def make_log(args):
     dt_now = datetime.datetime.now()
     str_dt_now = "_" + str(dt_now.year) + "-" + str(dt_now.month) + "-" + str(dt_now.day) + "-" + \
                  str(dt_now.hour) + "-" + str(dt_now.minute) + "-" + str(dt_now.second)
+    log_directory = os.path.join("log", args.dataset_type, args.entity_type)
+    os.makedirs(log_directory, exist_ok=True)
     log_file_name = args.logfile_name + str_dt_now + ".log"
-    os.makedirs(os.path.join("log", args.dataset_type, args.entity_type), exist_ok=True)
-    log_file_path = os.path.join("log", args.dataset_type, args.entity_type, log_file_name)
+    log_file_path = os.path.join(log_directory, log_file_name)
     if not os.path.isfile(log_file_path):
         log_file = pathlib.Path(log_file_path)
         log_file.touch()
@@ -167,9 +168,6 @@ def main():
             results_dict, unpatch_fn = kn.suppress_knowledge(
                 TEXT, GROUND_TRUTH, refined_neurons
             )
-
-            # logger.info(f'results_dict: {results_dict}')
-            # logger.info(f'unpatch_fn: {unpatch_fn}')
             sr_fi.write(f'{GROUND_TRUTH}:: {number_of_refined_neurons}:: {results_dict["before"]["gt_prob"]}, {results_dict["before"]["argmax_completion"]}, {results_dict["before"]["argmax_prob"]}:: {results_dict["after"]["gt_prob"]}, {results_dict["after"]["argmax_completion"]}, {results_dict["after"]["argmax_prob"]}:: {TEXT}\n')
 
 
