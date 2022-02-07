@@ -8,10 +8,10 @@ Now we are preparing this repository. Please wait for a while.
 - After that, you can find the same figures which are in the article in `concept_neurons/work/figure/article/ConceptNet/subject/*`.
   - figure 3: "all_suppressed_graph.png"
   - figure 4: "all_enhanced_graph.png"
-  - figure 5: "all_suppressed_overlapping_histogram.png"
-  - figure 6: "all_enhanced_overlapping_histogram.png"
-  - figure 7: "relevant_suppressed_overlapping_histogram.png"
-  - figure 8: "relevant_enhanced_overlapping_histogram.png"
+  - figure 5: "all_suppressed_histogram.png"
+  - figure 6: "all_enhanced_histogram.png"
+  - figure 7: "relevant_suppressed_histogram.png"
+  - figure 8: "relevant_enhanced_histogram.png"
 
 
 ## scripts
