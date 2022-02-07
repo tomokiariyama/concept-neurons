@@ -17,12 +17,16 @@ def make_parser():
 
     parser.add_argument("-dt", "--dataset_type", help="dataset type", type=str, default="ConceptNet")
     parser.add_argument("-et", "--entity_type", help="entity type", type=str, default="subject")
-    #parser.add_argument("-gt", "--graph_type", help="Designate making graphs including 'kitten' entity, or analyzing the effect of each POS.", type=str, default="kitten", choices=["kitten", "pos", "other"])
-    parser.add_argument("--for_any_entity",
-                        help="(optional) Shifts the entities displayed in the graph arbitrarily, set to an int type between 0 and 729. Notice that this flag can be set if --graph_type is 'other'.",
-                        type=int, default=1
-                        )
     parser.add_argument("--article_figures", help="only generate the figures in the article", action='store_true')
+    parser.add_argument("--for_any_entity",
+                        help="(optional) Shifts the entities displayed in the graph arbitrarily. This argument can't be set with '--article_figures' argument.",
+                        type=int, default=0
+                        )
+    parser.add_argument("-x", "--number_of_entities_show_in_x_axis",
+                        help="Designate the number of entities displayed in the figure 3 & 4 format. Note that '16' or more may collapse the figure layout.",
+                        type=int, default=15
+                        )
+
 
     return parser.parse_args()
 
@@ -145,15 +149,28 @@ def get_datalist(relevant_prompt_result_path, unrelated_prompt_result_path, grou
     return make_datalist_for_graph(relevant_prompt_prob_change_dict, unrelated_prompt_prob_change_dict, graph_type=graph_type)
 
 
-def make_suppress_graph(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type, entity_index):
+def make_suppress_graph(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type, entity_index, display_number_of_entities):
     percentage_list, labels, ground_truth_list = get_datalist(relevant_prompt_result_path, unrelated_prompt_result_path, ground_truth_type, graph_type="suppress")
 
-    number_of_entities_show_in_x_axis = 15
     start_entity_index = entity_index
+    number_of_entities_show_in_x_axis = display_number_of_entities
 
-    df = pd.DataFrame({"正解を選ぶ確率の減少率[%]": percentage_list[2*start_entity_index:2*start_entity_index+2*number_of_entities_show_in_x_axis],
-                       "凡例": labels[2*start_entity_index:2*start_entity_index+2*number_of_entities_show_in_x_axis],
-                       "概念": ground_truth_list[2*start_entity_index:2*start_entity_index+2*number_of_entities_show_in_x_axis]})
+    if len(percentage_list) >= 2*start_entity_index + 2*number_of_entities_show_in_x_axis:
+        df = pd.DataFrame({"正解を選ぶ確率の減少率[%]": percentage_list[2*start_entity_index:2*start_entity_index + 2*number_of_entities_show_in_x_axis],
+                           "凡例": labels[2*start_entity_index:2*start_entity_index + 2*number_of_entities_show_in_x_axis],
+                           "概念": ground_truth_list[2*start_entity_index:2*start_entity_index + 2*number_of_entities_show_in_x_axis]})
+    elif len(percentage_list) >= 2*number_of_entities_show_in_x_axis:
+        stop_index_after_going_around = 2*start_entity_index + 2*number_of_entities_show_in_x_axis - len(percentage_list)
+        df = pd.DataFrame({"正解を選ぶ確率の減少率[%]": percentage_list[2*start_entity_index:] + percentage_list[:stop_index_after_going_around],
+                           "凡例": labels[2*start_entity_index:] + labels[:stop_index_after_going_around],
+                           "概念": ground_truth_list[2*start_entity_index:] + ground_truth_list[:stop_index_after_going_around]})
+    else:
+        try:
+            raise ValueError(f"The argument '--number_of_entities_show_in_x_axis' is too large. Please set it smaller than {len(percentage_list)}")
+        except ValueError as e:
+            print(e)
+            traceback.print_exc()
+            sys.exit(1)
 
     sns_settings()
     fig, ax = plt.subplots(1, 1, figsize=(40, 10), tight_layout=True)
@@ -168,15 +185,28 @@ def make_suppress_graph(relevant_prompt_result_path, unrelated_prompt_result_pat
     plt.close()
 
 
-def make_enhance_graph(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type, entity_index):
+def make_enhance_graph(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type, entity_index, display_number_of_entities):
     percentage_list, labels, ground_truth_list = get_datalist(relevant_prompt_result_path, unrelated_prompt_result_path, ground_truth_type, graph_type="enhance")
 
-    number_of_entities_show_in_x_axis = 15
     start_entity_index = entity_index
+    number_of_entities_show_in_x_axis = display_number_of_entities
 
-    df = pd.DataFrame({"正解を選ぶ確率の増加率[%]": percentage_list[2*start_entity_index:2*start_entity_index+2*number_of_entities_show_in_x_axis],
-                       "凡例": labels[2*start_entity_index:2*start_entity_index+2*number_of_entities_show_in_x_axis],
-                       "概念": ground_truth_list[2*start_entity_index:2*start_entity_index+2*number_of_entities_show_in_x_axis]})
+    if len(percentage_list) >= 2*start_entity_index + 2*number_of_entities_show_in_x_axis:
+        df = pd.DataFrame({"正解を選ぶ確率の増加率[%]": percentage_list[2*start_entity_index:2*start_entity_index + 2*number_of_entities_show_in_x_axis],
+                           "凡例": labels[2*start_entity_index:2*start_entity_index + 2*number_of_entities_show_in_x_axis],
+                           "概念": ground_truth_list[2*start_entity_index:2*start_entity_index + 2*number_of_entities_show_in_x_axis]})
+    elif len(percentage_list) >= 2*number_of_entities_show_in_x_axis:
+        stop_index_after_going_around = 2*start_entity_index + 2*number_of_entities_show_in_x_axis - len(percentage_list)
+        df = pd.DataFrame({"正解を選ぶ確率の増加率[%]": percentage_list[2*start_entity_index:] + percentage_list[:stop_index_after_going_around],
+                           "凡例": labels[2*start_entity_index:] + labels[:stop_index_after_going_around],
+                           "概念": ground_truth_list[2*start_entity_index:] + ground_truth_list[:stop_index_after_going_around]})
+    else:
+        try:
+            raise ValueError(f"The argument '--number_of_entities_show_in_x_axis' is too large. Please set it smaller than {len(percentage_list)}")
+        except ValueError as e:
+            print(e)
+            traceback.print_exc()
+            sys.exit(1)
 
     sns_settings()
     fig, ax = plt.subplots(1, 1, figsize=(40, 10), tight_layout=True)
@@ -343,7 +373,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_ar
     sns.histplot(data=df_suppress_relevant, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=28, binrange=(-100, 40), ax=ax)
     figure = fig.get_figure()
 
-    save_path = os.path.join(root_save_path, f"relevant_suppressed_histogram.png")
+    save_path = os.path.join(root_save_path, f"relevant_suppressed_overlapping_histogram.png")
     figure.savefig(save_path)
     print(f"figure is saved in {save_path}")
     plt.close()
@@ -363,7 +393,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_ar
     sns.histplot(data=df_enhance_relevant, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=44, binrange=(-100, 1000), ax=ax)
     figure = fig.get_figure()
 
-    save_path = os.path.join(root_save_path, f"relevant_enhanced_histogram.png")
+    save_path = os.path.join(root_save_path, f"relevant_enhanced_overlapping_histogram.png")
     figure.savefig(save_path)
     print(f"figure is saved in {save_path}")
     plt.close()
@@ -384,7 +414,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_ar
         sns.histplot(data=df_suppress_unrelated, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=24, binrange=(-50, 10), ax=ax)
         figure = fig.get_figure()
 
-        save_path = os.path.join(root_save_path, f"unrelated_suppressed_histogram.png")
+        save_path = os.path.join(root_save_path, f"unrelated_suppressed_overlapping_histogram.png")
         figure.savefig(save_path)
         print(f"figure is saved in {save_path}")
         plt.close()
@@ -404,7 +434,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_ar
         sns.histplot(data=df_enhance_unrelated, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=28, binrange=(-15, 20), ax=ax)
         figure = fig.get_figure()
 
-        save_path = os.path.join(root_save_path, f"unrelated_enhanced_histogram.png")
+        save_path = os.path.join(root_save_path, f"unrelated_enhanced_overlapping_histogram.png")
         figure.savefig(save_path)
         print(f"figure is saved in {save_path}")
         plt.close()
@@ -415,25 +445,18 @@ def main():
 
     if args.dataset_type == "TREx" and args.entity_type == "subject":
         try:
-            raise NotImplementedError("didn't conduct the experiment with such a condition.")
+            raise NotImplementedError("Sorry, but couldn't show such result graphically.")
         except NotImplementedError:
+            traceback.print_exc()
+            sys.exit(1)
+    elif args.article_figures and args.for_any_entity:
+        try:
+            raise ValueError("These argument can't be set together: '--article_figures' and '--for_any_entity'.")
+        except ValueError:
             traceback.print_exc()
             sys.exit(1)
 
-    """
-    if args.graph_type == "other" and 0 <= args.for_any_entity and args.for_any_entity <= 729:
-        entity_index = args.for_any_entity
-    elif args.graph_type == "kitten" and args.for_any_entity == 100000:
-        entity_index = 126
-    elif args.graph_type == "pos" and args.for_any_entity == 100000:
-        entity_index = 50
-    else:
-        try:
-            raise NotImplementedError("please set '--graph_type' or '--for_any_entity' argument correctly")
-        except NotImplementedError:
-            traceback.print_exc()
-            sys.exit(1)
-    """
+    display_number_of_entities = args.number_of_entities_show_in_x_axis
     if not args.article_figures:
         entity_index = args.for_any_entity
 
@@ -450,8 +473,8 @@ def main():
         os.makedirs(root_path_of_saving_graph, exist_ok=True)
 
         # figure 3, 4, 5, 6
-        make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "all", 126)
-        make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "all", 126)
+        make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "all", 126, display_number_of_entities)
+        make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "all", 126, display_number_of_entities)
         hoge, fuga = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "all")
         foo, bar = make_enhance_histogram_comparing_prompt_relevance(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "all")
 
@@ -478,8 +501,8 @@ def main():
         os.makedirs(root_path_of_saving_graph, exist_ok=True)
 
         for ground_truth_type in ["all", "entity", "concept"]:
-            make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index)
-            make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index)
+            make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index, display_number_of_entities)
+            make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index, display_number_of_entities)
             #make_suppress_histogram(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type)
             #make_enhance_histogram(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type)
             df_suppress_relevant, df_suppress_unrelated = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type)
