@@ -13,12 +13,16 @@ import japanize_matplotlib
 
 
 def make_parser():
-    parser = argparse.ArgumentParser(description="実験結果をグラフ化します")
+    parser = argparse.ArgumentParser(description="Make results into a graph.")
 
-    parser.add_argument("-dt", "--dataset_type", help="使用したデータセットの種類", type=str, default="ConceptNet")
-    parser.add_argument("-et", "--entity_type", help="分析したエンティティの種類", type=str, default="subject")
-    parser.add_argument("-gt", "--graph_type", help="kittenエンティティをグラフに含むか，品詞ごとの分析グラフを作成するかを指定します", type=str, default="kitten", choices=["kitten", "pos"])
-    parser.add_argument("--for_any_entity", help="(optional) グラフに表示するエンティティを任意にずらします, int型で0~729の間で設定してください", type=int, default=100000)
+    parser.add_argument("-dt", "--dataset_type", help="dataset type", type=str, default="ConceptNet")
+    parser.add_argument("-et", "--entity_type", help="entity type", type=str, default="subject")
+    #parser.add_argument("-gt", "--graph_type", help="Designate making graphs including 'kitten' entity, or analyzing the effect of each POS.", type=str, default="kitten", choices=["kitten", "pos", "other"])
+    parser.add_argument("--for_any_entity",
+                        help="(optional) Shifts the entities displayed in the graph arbitrarily, set to an int type between 0 and 729. Notice that this flag can be set if --graph_type is 'other'.",
+                        type=int, default=1
+                        )
+    parser.add_argument("--article_figures", help="only generate the figures in the article", action='store_true')
 
     return parser.parse_args()
 
@@ -30,7 +34,7 @@ def sns_settings():
         palette=sns.color_palette("Set1", 24),
         font_scale=4,
         rc={"lines.linewidth": 6, 'grid.linestyle': '--'},
-        font='IPAexGothic'  # グラフに日本語を使用するためのフォント
+        font='IPAexGothic'  # Japanese font
         )
 
 
@@ -41,7 +45,7 @@ def sns_settings2():
         palette=sns.dark_palette("palegreen", n_colors=2, reverse=True),
         font_scale=4,
         rc={"lines.linewidth": 6, 'grid.linestyle': '--'},
-        font='IPAexGothic'  # グラフに日本語を使用するためのフォント
+        font='IPAexGothic'
         )
 
 
@@ -268,59 +272,61 @@ def make_enhance_histogram(relevant_prompt_result_path, unrelated_prompt_result_
     plt.close()
 
 
-def make_suppress_histogram_comparing_prompt_relevance(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type):
+def make_suppress_histogram_comparing_prompt_relevance(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type, only_return_dataframes=False):
     percentage_list, labels, ground_truth_list = get_datalist(relevant_prompt_result_path, unrelated_prompt_result_path, ground_truth_type, graph_type="suppress")
 
     df_relevant = make_dataframe_for_histogram(percentage_list, labels, ground_truth_list, graph_type="suppress", prompt_type="relevant")
     df_unrelated = make_dataframe_for_histogram(percentage_list, labels, ground_truth_list, graph_type="suppress", prompt_type="unrelated")
 
-    df_suppress = pd.concat([df_relevant, df_unrelated])
-    len_df_suppress = len(df_suppress.index)
-    df_suppress["new_index"] = [x for x in range(len_df_suppress)]
-    df_suppress.set_index("new_index", inplace=True)
-    df_suppress = df_suppress.drop("概念", axis=1)
+    if not only_return_dataframes:
+        df_suppress = pd.concat([df_relevant, df_unrelated])
+        len_df_suppress = len(df_suppress.index)
+        df_suppress["new_index"] = [x for x in range(len_df_suppress)]
+        df_suppress.set_index("new_index", inplace=True)
+        df_suppress = df_suppress.drop("概念", axis=1)
 
-    sns_settings()
-    fig, ax = plt.subplots(1, 1, figsize=(30, 15), tight_layout=True)
+        sns_settings()
+        fig, ax = plt.subplots(1, 1, figsize=(30, 15), tight_layout=True)
 
-    sns.histplot(data=df_suppress, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=28, binrange=(-100, 40), ax=ax)
-    figure = fig.get_figure()
+        sns.histplot(data=df_suppress, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=28, binrange=(-100, 40), ax=ax)
+        figure = fig.get_figure()
 
-    save_path = os.path.join(root_save_path, f"{ground_truth_type}_suppressed_overlapping_histogram.png")
-    figure.savefig(save_path)
-    print(f"figure is saved in {save_path}")
-    plt.close()
+        save_path = os.path.join(root_save_path, f"{ground_truth_type}_suppressed_overlapping_histogram.png")
+        figure.savefig(save_path)
+        print(f"figure is saved in {save_path}")
+        plt.close()
 
     return df_relevant, df_unrelated
 
 
-def make_enhance_histogram_comparing_prompt_relevance(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type):
+def make_enhance_histogram_comparing_prompt_relevance(relevant_prompt_result_path, unrelated_prompt_result_path, root_save_path, ground_truth_type, only_return_dataframes=False):
     percentage_list, labels, ground_truth_list = get_datalist(relevant_prompt_result_path, unrelated_prompt_result_path, ground_truth_type, graph_type="enhance")
 
     df_relevant = make_dataframe_for_histogram(percentage_list, labels, ground_truth_list, graph_type="enhance", prompt_type="relevant")
     df_unrelated = make_dataframe_for_histogram(percentage_list, labels, ground_truth_list, graph_type="enhance", prompt_type="unrelated")
 
-    df_enhance = pd.concat([df_relevant, df_unrelated])
-    len_df_enhance = len(df_enhance.index)
-    df_enhance["new_index"] = [x for x in range(len_df_enhance)]
-    df_enhance.set_index("new_index", inplace=True)
-    df_enhance = df_enhance.drop("概念", axis=1)
+    if not only_return_dataframes:
+        df_enhance = pd.concat([df_relevant, df_unrelated])
+        len_df_enhance = len(df_enhance.index)
+        df_enhance["new_index"] = [x for x in range(len_df_enhance)]
+        df_enhance.set_index("new_index", inplace=True)
+        df_enhance = df_enhance.drop("概念", axis=1)
 
-    sns_settings()
-    fig, ax = plt.subplots(1, 1, figsize=(30, 15), tight_layout=True)
+        sns_settings()
+        fig, ax = plt.subplots(1, 1, figsize=(30, 15), tight_layout=True)
 
-    sns.histplot(data=df_enhance, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=44, binrange=(-100, 1000), ax=ax)
-    figure = fig.get_figure()
+        sns.histplot(data=df_enhance, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=44, binrange=(-100, 1000), ax=ax)
+        figure = fig.get_figure()
 
-    save_path = os.path.join(root_save_path, f"{ground_truth_type}_enhanced_overlapping_histogram.png")
-    figure.savefig(save_path)
-    print(f"figure is saved in {save_path}")
-    plt.close()
+        save_path = os.path.join(root_save_path, f"{ground_truth_type}_enhanced_overlapping_histogram.png")
+        figure.savefig(save_path)
+        print(f"figure is saved in {save_path}")
+        plt.close()
 
     return df_relevant, df_unrelated
 
 
-def make_histograms_comparing_entity_and_concept(df_dict, root_save_path):
+def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_article=False):
     # make "suppress_activation_with_relevant_prompts" histogram
     df_entity_suppress_relevant = df_dict["entity_suppress_relevant"].replace({"凡例": {"活性値を抑制し，知識ニューロンに紐づくプロンプトを予測": "名詞"}})
     df_concept_suppress_relevant = df_dict["concept_suppress_relevant"].replace({"凡例": {"活性値を抑制し，知識ニューロンに紐づくプロンプトを予測": "動詞・形容詞・副詞"}})
@@ -338,26 +344,6 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path):
     figure = fig.get_figure()
 
     save_path = os.path.join(root_save_path, f"relevant_suppressed_overlapping_histogram.png")
-    figure.savefig(save_path)
-    print(f"figure is saved in {save_path}")
-    plt.close()
-
-    # make "suppress_activation_with_unrelated_prompts" histogram
-    df_entity_suppress_unrelated = df_dict["entity_suppress_unrelated"].replace({"凡例": {"活性値を抑制し，知識ニューロンとは無関係のプロンプトを予測": "名詞"}})
-    df_concept_suppress_unrelated = df_dict["concept_suppress_unrelated"].replace({"凡例": {"活性値を抑制し，知識ニューロンとは無関係のプロンプトを予測": "動詞・形容詞・副詞"}})
-
-    df_suppress_unrelated = pd.concat([df_entity_suppress_unrelated, df_concept_suppress_unrelated])
-    len_df_suppress_unrelated = len(df_suppress_unrelated.index)
-    df_suppress_unrelated["new_index"] = [x for x in range(len_df_suppress_unrelated)]
-    df_suppress_unrelated.set_index("new_index", inplace=True)
-    df_suppress_unrelated = df_suppress_unrelated.drop("概念", axis=1)
-
-    fig, ax = plt.subplots(1, 1, figsize=(24, 10), tight_layout=True)
-
-    sns.histplot(data=df_suppress_unrelated, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=24, binrange=(-50, 10), ax=ax)
-    figure = fig.get_figure()
-
-    save_path = os.path.join(root_save_path, f"unrelated_suppressed_overlapping_histogram.png")
     figure.savefig(save_path)
     print(f"figure is saved in {save_path}")
     plt.close()
@@ -382,25 +368,46 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path):
     print(f"figure is saved in {save_path}")
     plt.close()
 
-    # make "enhance_activation_with_unrelated_prompts" histogram
-    df_entity_enhance_unrelated = df_dict["entity_enhance_unrelated"].replace({"凡例": {"活性値を増幅し，知識ニューロンとは無関係のプロンプトを予測": "名詞"}})
-    df_concept_enhance_unrelated = df_dict["concept_enhance_unrelated"].replace({"凡例": {"活性値を増幅し，知識ニューロンとは無関係のプロンプトを予測": "動詞・形容詞・副詞"}})
+    if not for_article:
+        # make "suppress_activation_with_unrelated_prompts" histogram
+        df_entity_suppress_unrelated = df_dict["entity_suppress_unrelated"].replace({"凡例": {"活性値を抑制し，知識ニューロンとは無関係のプロンプトを予測": "名詞"}})
+        df_concept_suppress_unrelated = df_dict["concept_suppress_unrelated"].replace({"凡例": {"活性値を抑制し，知識ニューロンとは無関係のプロンプトを予測": "動詞・形容詞・副詞"}})
 
-    df_enhance_unrelated = pd.concat([df_entity_enhance_unrelated, df_concept_enhance_unrelated])
-    len_df_enhance_unrelated = len(df_enhance_unrelated.index)
-    df_enhance_unrelated["new_index"] = [x for x in range(len_df_enhance_unrelated)]
-    df_enhance_unrelated.set_index("new_index", inplace=True)
-    df_enhance_unrelated = df_enhance_unrelated.drop("概念", axis=1)
+        df_suppress_unrelated = pd.concat([df_entity_suppress_unrelated, df_concept_suppress_unrelated])
+        len_df_suppress_unrelated = len(df_suppress_unrelated.index)
+        df_suppress_unrelated["new_index"] = [x for x in range(len_df_suppress_unrelated)]
+        df_suppress_unrelated.set_index("new_index", inplace=True)
+        df_suppress_unrelated = df_suppress_unrelated.drop("概念", axis=1)
 
-    fig, ax = plt.subplots(1, 1, figsize=(24, 10), tight_layout=True)
+        fig, ax = plt.subplots(1, 1, figsize=(24, 10), tight_layout=True)
 
-    sns.histplot(data=df_enhance_unrelated, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=28, binrange=(-15, 20), ax=ax)
-    figure = fig.get_figure()
+        sns.histplot(data=df_suppress_unrelated, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=24, binrange=(-50, 10), ax=ax)
+        figure = fig.get_figure()
 
-    save_path = os.path.join(root_save_path, f"unrelated_enhanced_overlapping_histogram.png")
-    figure.savefig(save_path)
-    print(f"figure is saved in {save_path}")
-    plt.close()
+        save_path = os.path.join(root_save_path, f"unrelated_suppressed_overlapping_histogram.png")
+        figure.savefig(save_path)
+        print(f"figure is saved in {save_path}")
+        plt.close()
+
+        # make "enhance_activation_with_unrelated_prompts" histogram
+        df_entity_enhance_unrelated = df_dict["entity_enhance_unrelated"].replace({"凡例": {"活性値を増幅し，知識ニューロンとは無関係のプロンプトを予測": "名詞"}})
+        df_concept_enhance_unrelated = df_dict["concept_enhance_unrelated"].replace({"凡例": {"活性値を増幅し，知識ニューロンとは無関係のプロンプトを予測": "動詞・形容詞・副詞"}})
+
+        df_enhance_unrelated = pd.concat([df_entity_enhance_unrelated, df_concept_enhance_unrelated])
+        len_df_enhance_unrelated = len(df_enhance_unrelated.index)
+        df_enhance_unrelated["new_index"] = [x for x in range(len_df_enhance_unrelated)]
+        df_enhance_unrelated.set_index("new_index", inplace=True)
+        df_enhance_unrelated = df_enhance_unrelated.drop("概念", axis=1)
+
+        fig, ax = plt.subplots(1, 1, figsize=(24, 10), tight_layout=True)
+
+        sns.histplot(data=df_enhance_unrelated, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=28, binrange=(-15, 20), ax=ax)
+        figure = fig.get_figure()
+
+        save_path = os.path.join(root_save_path, f"unrelated_enhanced_overlapping_histogram.png")
+        figure.savefig(save_path)
+        print(f"figure is saved in {save_path}")
+        plt.close()
 
 
 def main():
@@ -413,11 +420,12 @@ def main():
             traceback.print_exc()
             sys.exit(1)
 
-    if 0 <= args.for_any_entity and args.for_any_entity <= 729:
+    """
+    if args.graph_type == "other" and 0 <= args.for_any_entity and args.for_any_entity <= 729:
         entity_index = args.for_any_entity
-    elif args.graph_type == "kitten":
+    elif args.graph_type == "kitten" and args.for_any_entity == 100000:
         entity_index = 126
-    elif args.graph_type == "pos":
+    elif args.graph_type == "pos" and args.for_any_entity == 100000:
         entity_index = 50
     else:
         try:
@@ -425,7 +433,9 @@ def main():
         except NotImplementedError:
             traceback.print_exc()
             sys.exit(1)
-
+    """
+    if not args.article_figures:
+        entity_index = args.for_any_entity
 
     result_path = os.path.join("work", "result", args.dataset_type, args.entity_type)
     suppress_relevant = os.path.join(result_path, "suppress_activation_and_relevant_prompts.txt")
@@ -433,29 +443,59 @@ def main():
     enhance_relevant = os.path.join(result_path, "enhance_activation_and_relevant_prompts.txt")
     enhance_unrelated = os.path.join(result_path, "enhance_activation_and_unrelated_prompts.txt")
 
-    root_path_of_saving_graph = os.path.join("work", "figure", args.dataset_type, args.entity_type)
-    os.makedirs(root_path_of_saving_graph, exist_ok=True)
-
     df_dict_for_comparing_entity_and_concept = defaultdict(int)
-    for ground_truth_type in ["all", "entity", "concept"]:
-        make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index)
-        make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index)
-        #make_suppress_histogram(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type)
-        #make_enhance_histogram(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type)
-        df_suppress_relevant, df_suppress_unrelated = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type)
-        df_enhance_relevant, df_enhance_unrelated = make_enhance_histogram_comparing_prompt_relevance(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type)
-        if ground_truth_type == "entity":
-            df_dict_for_comparing_entity_and_concept["entity_suppress_relevant"] = df_suppress_relevant
-            df_dict_for_comparing_entity_and_concept["entity_suppress_unrelated"] = df_suppress_unrelated
-            df_dict_for_comparing_entity_and_concept["entity_enhance_relevant"] = df_enhance_relevant
-            df_dict_for_comparing_entity_and_concept["entity_enhance_unrelated"] = df_enhance_unrelated
-        elif ground_truth_type == "concept":
-            df_dict_for_comparing_entity_and_concept["concept_suppress_relevant"] = df_suppress_relevant
-            df_dict_for_comparing_entity_and_concept["concept_suppress_unrelated"] = df_suppress_unrelated
-            df_dict_for_comparing_entity_and_concept["concept_enhance_relevant"] = df_enhance_relevant
-            df_dict_for_comparing_entity_and_concept["concept_enhance_unrelated"] = df_enhance_unrelated
 
-    make_histograms_comparing_entity_and_concept(df_dict_for_comparing_entity_and_concept, root_path_of_saving_graph)
+    if args.article_figures:
+        root_path_of_saving_graph = os.path.join("work", "figure", "article", args.dataset_type, args.entity_type)
+        os.makedirs(root_path_of_saving_graph, exist_ok=True)
+
+        # figure 3, 4, 5, 6
+        make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "all", 126)
+        make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "all", 126)
+        hoge, fuga = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "all")
+        foo, bar = make_enhance_histogram_comparing_prompt_relevance(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "all")
+
+        # preparation for figure 7, 8
+        df_suppress_relevant, df_suppress_unrelated = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "entity", only_return_dataframes=True)
+        df_enhance_relevant, df_enhance_unrelated = make_enhance_histogram_comparing_prompt_relevance(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "entity", only_return_dataframes=True)
+        df_dict_for_comparing_entity_and_concept["entity_suppress_relevant"] = df_suppress_relevant
+        df_dict_for_comparing_entity_and_concept["entity_suppress_unrelated"] = df_suppress_unrelated
+        df_dict_for_comparing_entity_and_concept["entity_enhance_relevant"] = df_enhance_relevant
+        df_dict_for_comparing_entity_and_concept["entity_enhance_unrelated"] = df_enhance_unrelated
+
+        df_suppress_relevant, df_suppress_unrelated = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, "concept", only_return_dataframes=True)
+        df_enhance_relevant, df_enhance_unrelated = make_enhance_histogram_comparing_prompt_relevance(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, "concept", only_return_dataframes=True)
+        df_dict_for_comparing_entity_and_concept["concept_suppress_relevant"] = df_suppress_relevant
+        df_dict_for_comparing_entity_and_concept["concept_suppress_unrelated"] = df_suppress_unrelated
+        df_dict_for_comparing_entity_and_concept["concept_enhance_relevant"] = df_enhance_relevant
+        df_dict_for_comparing_entity_and_concept["concept_enhance_unrelated"] = df_enhance_unrelated
+
+        # figure 7, 8
+        make_histograms_comparing_entity_and_concept(df_dict_for_comparing_entity_and_concept, root_path_of_saving_graph, for_article=True)
+
+    else:
+        root_path_of_saving_graph = os.path.join("work", "figure", args.dataset_type, args.entity_type)
+        os.makedirs(root_path_of_saving_graph, exist_ok=True)
+
+        for ground_truth_type in ["all", "entity", "concept"]:
+            make_suppress_graph(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index)
+            make_enhance_graph(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type, entity_index)
+            #make_suppress_histogram(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type)
+            #make_enhance_histogram(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type)
+            df_suppress_relevant, df_suppress_unrelated = make_suppress_histogram_comparing_prompt_relevance(suppress_relevant, suppress_unrelated, root_path_of_saving_graph, ground_truth_type)
+            df_enhance_relevant, df_enhance_unrelated = make_enhance_histogram_comparing_prompt_relevance(enhance_relevant, enhance_unrelated, root_path_of_saving_graph, ground_truth_type)
+            if ground_truth_type == "entity":
+                df_dict_for_comparing_entity_and_concept["entity_suppress_relevant"] = df_suppress_relevant
+                df_dict_for_comparing_entity_and_concept["entity_suppress_unrelated"] = df_suppress_unrelated
+                df_dict_for_comparing_entity_and_concept["entity_enhance_relevant"] = df_enhance_relevant
+                df_dict_for_comparing_entity_and_concept["entity_enhance_unrelated"] = df_enhance_unrelated
+            elif ground_truth_type == "concept":
+                df_dict_for_comparing_entity_and_concept["concept_suppress_relevant"] = df_suppress_relevant
+                df_dict_for_comparing_entity_and_concept["concept_suppress_unrelated"] = df_suppress_unrelated
+                df_dict_for_comparing_entity_and_concept["concept_enhance_relevant"] = df_enhance_relevant
+                df_dict_for_comparing_entity_and_concept["concept_enhance_unrelated"] = df_enhance_unrelated
+
+        make_histograms_comparing_entity_and_concept(df_dict_for_comparing_entity_and_concept, root_path_of_saving_graph)
 
 
 if __name__ == '__main__':

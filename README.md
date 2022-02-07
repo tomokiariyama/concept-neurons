@@ -1,26 +1,25 @@
 # concept neurons
-まもなく公開いたします。
+Now we are preparing this repository. Please wait for a while.
 
-## 図の再現方法
-- まず，"set_dataset_path.sh"内に，データセットのダウンロード先ディレクトリを指定してください
-- 次に，"concept_neurons"ディレクトリにいる状態でご自身が使用される仮想環境にスイッチし，"zsh Setup.sh"と実行してください
-- 次に，"zsh ConceptNet.sh"と実行してください．著者の環境では実行に55分ほどかかりました
-- 最後に，"zsh make_graphs.sh"と実行してください
-- 上記の実行後，"concept_neurons/figure/ConceptNet/subject/*"配下に，論文と同様のグラフがそれぞれ作成されます
-  - 図3: "all_suppressed_graph.png"
-  - 図4: "all_enhanced_graph.png"
-  - 図5: "all_suppressed_overlapping_histogram.png"
-  - 図6: "all_enhanced_overlapping_histogram.png"
-  - 図7: "relevant_suppressed_overlapping_histogram.png"
-  - 図8: "relevant_enhanced_overlapping_histogram.png"
+## How to Reproduce Figures
+- At first, please `git clone` this repository.
+- Next, switch to the virtual environment you'll use when you are in the directory you just `git clone`d(=`concept_neurons`).
+- Finally, please execute `zsh reproduce_figures.sh`.
+- After that, you can find the same figures which are in the article in `concept_neurons/work/figure/article/ConceptNet/subject/*`.
+  - figure 3: "all_suppressed_graph.png"
+  - figure 4: "all_enhanced_graph.png"
+  - figure 5: "all_suppressed_overlapping_histogram.png"
+  - figure 6: "all_enhanced_overlapping_histogram.png"
+  - figure 7: "relevant_suppressed_overlapping_histogram.png"
+  - figure 8: "relevant_enhanced_overlapping_histogram.png"
 
-## スクリプト
 
-```codes
-set_dataset_path.sh: データセットのダウンロード先ディレクトリを指定する（初めに必ず設定してください）
-Setup.sh: データセットのダウンロードや，必要なモジュールのインストール
-ConceptNet.sh: 実験結果の取得
-  evaluate.py: 実験コード
-make_graphs.sh: 実験結果のグラフ化
-  make_graphs.py: グラフ化コード
+## scripts
+```yaml
+set_dataset_path.sh: Set the directory which LAMA dataset is downloaded. (please change the directory if you needed)
+Setup.sh: Download LAMA dataset and install required modules to your virtual environment.
+ConceptNet.sh: Conduct experiments, then obtain results.
+  - evaluate.py: Experiment codes
+make_graphs.sh: Generate graphs.
+  - make_graphs.py: Make results into a graph.
 ```

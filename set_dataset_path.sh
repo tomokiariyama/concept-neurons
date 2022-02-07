@@ -1,3 +1,4 @@
 #!/bin/sh
 
-export YOUR_DATA_DIRECTORY="please set your data path"
+#export DATA_DIRECTORY="."
+export YOUR_DATA_DIRECTORY="/work02/ariyama/nlp2022_repo_testdir"

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from knowledge_neurons import KnowledgeNeurons, initialize_model_and_tokenizer, model_type, ALL_MODELS
-from data import extract_dicts_from_jsonlines, format_data_with_entity_type
+from data import extract_raw_dataset_from_jsonlines, extract_matched_dataset
 import random
 import logzero
 from logzero import logger
@@ -14,22 +14,23 @@ import datetime
 
 
 def make_parser():
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='Conduct experiments')
 
-    parser.add_argument('--seed', help='乱数のシード値, default=42', type=int, default=42)
-    parser.add_argument('-mn', '--model_name', help='使用するニューラルモデルの名前, default="bert-base-uncased"', type=str, default="bert-base-uncased")
-    parser.add_argument('-dt', '--dataset_type', help="使用するデータセットを指定します", default="ConceptNet", choices=["ConceptNet", "TREx"])
-    parser.add_argument('-et', '--entity_type', help="解析する対象を指定します", default="subject", choices=["subject", "object"])
-    parser.add_argument('-nt', '--number_of_templates', help='この数以上のテンプレートを持つエンティティのみを解析対象とします, default=4', type=int, default=4)
+    parser.add_argument('--seed', help='the seed of random numbers. default=42', type=int, default=42)
+    parser.add_argument('-mn', '--model_name', help='the name of neural model. default="bert-base-uncased"', type=str, default="bert-base-uncased")
+    parser.add_argument('-dt', '--dataset_type', help="designate the dataset", default="ConceptNet", choices=["ConceptNet", "TREx"])
+    parser.add_argument('-et', '--entity_type', help="designate entity type which is masked", default="subject", choices=["subject", "object"])
+    parser.add_argument('-nt', '--number_of_templates', help='the minimum number of templates which each entity have. default=4', type=int, default=4)
     parser.add_argument('--local_rank', help="local rank for multigpu processing, default=0", type=int, default=0)
-    parser.add_argument('-ln', '--logfile_name', help="ログを保存するファイル名を指定します, default='run'", type=str, default="run")
+    parser.add_argument('-ln', '--logfile_name', help="designate the file name of log. default='run'", type=str, default="run")
     parser.add_argument('-bs', '--batch_size', help="", type=int, default=20)
     parser.add_argument('--steps', help="number of steps in the integrated grad calculation", type=int, default=20)
     parser.add_argument('-at', '--adaptive_threshold', help="the threshold value", type=float, default=0.3)
     parser.add_argument('-sp', '--sharing_percentage', help="the threshold for the sharing percentage", type=float, default=0.5)
     parser.add_argument('--rawdataset_filename', type=str, default='test.jsonl')
-    parser.add_argument('--max_words', type=int, default=15)
-    parser.add_argument('-dp', '--dataset_path', help="LAMAデータセットがダウンロードされているディレクトリのパス", required=True)
+    parser.add_argument('--max_words', help="the maximum number of words which each template can have", type=int, default=15)
+    parser.add_argument('-dp', '--dataset_path', help="the path for the LAMA dataset", required=True)
+    parser.add_argument('-sd', '--saving_directory', help="the path for saving results", default=os.path.join("work", "results"))
 
     return parser.parse_args()
 
@@ -60,7 +61,7 @@ def make_log(args):
     logger.info('model name is ' + args.model_name)
     logger.info('dataset type is ' + args.dataset_type)
     logger.info('entity type is ' + args.entity_type)
-    logger.info('the number of minimum templates is ' + str(args.number_of_templates))
+    logger.info('the number of templates each entity at least have is ' + str(args.number_of_templates))
 
 
 def main():
@@ -85,15 +86,15 @@ def main():
     # initialize the knowledge neuron wrapper with your model, tokenizer and a string expressing the type of your model ('gpt2' / 'gpt_neo' / 'bert')
     kn = KnowledgeNeurons(model, tokenizer, model_type=model_type(MODEL_NAME))
 
-    # make dataset with parsed settings
+    # make dataset by the conditions
     dataset_path = os.path.join(args.dataset_path, "data", args.dataset_type, args.rawdataset_filename)
-    raw_dataset = extract_dicts_from_jsonlines(dataset_path)
-    matched_dataset = format_data_with_entity_type(args.entity_type, raw_dataset, args.number_of_templates, args.max_words)
+    raw_dataset = extract_raw_dataset_from_jsonlines(dataset_path)
+    matched_dataset = extract_matched_dataset(raw_dataset, args.entity_type, args.number_of_templates, args.max_words)
 
     logger.info('Number of entities covered this time: ' + str(len(matched_dataset.keys())))
     logger.info('')
 
-    # 今回の条件でデータセットとして用いたエンティティをファイルに書きだす
+    # Write out the entities used as the dataset in this condition to a file.
     os.makedirs(os.path.join("work", "entities"), exist_ok=True)
     save_entities_path = os.path.join("work", "entities", f"{args.dataset_type}_{args.entity_type}.txt")
     if matched_dataset:
@@ -104,7 +105,7 @@ def main():
                 fi.write(entity + "\n")
 
     # to find the knowledge neurons, we need the same 'facts' expressed in multiple different ways, and a ground truth
-    result_path = os.path.join("work", "result", args.dataset_type, args.entity_type)
+    result_path = os.path.join(args.saving_directory, args.dataset_type, args.entity_type)
     os.makedirs(result_path, exist_ok=True)
     suppress_relevant = os.path.join(result_path, "suppress_activation_and_relevant_prompts.txt")
     suppress_unrelated = os.path.join(result_path, "suppress_activation_and_unrelated_prompts.txt")
@@ -122,17 +123,6 @@ def main():
             TEXTS = list(templates)
             TEXT = TEXTS[0]
             GROUND_TRUTH = entity
-
-            try:
-                assert len(TEXTS) >= args.number_of_templates, "テンプレートの最小数を満たしていないエンティティが含まれてしまっています"
-            except AssertionError as err:
-                logger.info('AssertionError: ' + str(err))
-                logger.info(
-                    'The number of minimum templates: ' + str(args.number_of_templates) + ', the length of this ground_truth templates: ' + str(len(TEXTS)))
-                logger.info('Ground_truth: ' + GROUND_TRUTH)
-                logger.info('The number of related templates: ' + str(len(TEXTS)))
-                logger.info(f'Templates: {TEXTS}')
-                logger.info('')
 
             logger.info("Ground Truth: " + GROUND_TRUTH)
             logger.info('The number of related templates: ' + str(len(TEXTS)))
@@ -154,10 +144,8 @@ def main():
             logger.info('refining done')
             number_of_refined_neurons = len(refined_neurons)
 
-            # logger.info(torch.cuda.memory_summary())
             unrelated_prompt = "[MASK] is the official language of the solomon islands"
             unrelated_ground_truth = "english"
-            target = "london"
 
             # suppress the activations at the refined neurons + test the effect on a relevant prompt
             # 'results_dict' is a dictionary containing the probability of the ground truth being generated before + after modification, as well as other info

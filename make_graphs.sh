@@ -7,8 +7,9 @@ export PYTHONHASHSEED=0
 DATE=`date +%Y%m%d-%H%M`
 echo $DATE
 
-python make_graphs.py -dt ConceptNet -et subject -gt "pos"
-python make_graphs.py -dt ConceptNet -et subject -gt "kitten"
+#python make_graphs.py -dt ConceptNet -et subject -gt "pos"
+#python make_graphs.py -dt ConceptNet -et subject -gt "kitten"
+python make_graphs.py -dt ConceptNet -et subject --article_figures
 
 DATE=`date +%Y%m%d-%H%M`
 echo $DATE
