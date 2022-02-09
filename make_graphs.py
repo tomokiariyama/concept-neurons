@@ -15,17 +15,18 @@ import japanize_matplotlib
 def make_parser():
     parser = argparse.ArgumentParser(description="Make results into a graph.")
 
-    parser.add_argument("-dt", "--dataset_type", help="dataset type", type=str, default="ConceptNet")
-    parser.add_argument("-et", "--entity_type", help="entity type", type=str, default="subject")
-    parser.add_argument("--article_figures", help="only generate the figures in the article", action='store_true')
+    parser.add_argument("-dt", "--dataset_type", help="dataset type", type=str, default="ConceptNet", required=True)
+    parser.add_argument("-et", "--entity_type", help="entity type", type=str, default="subject", required=True)
+    parser.add_argument("--paper_figures", help="generate only the figures in the paper", action='store_true')
     parser.add_argument("--for_any_entity",
-                        help="(optional) Shifts the entities displayed in the graph arbitrarily. This argument can't be set with '--article_figures' argument.",
+                        help="(optional) Shifts the entities displayed in the graph arbitrarily. This argument can't be set with '--paper_figures' argument.",
                         type=int, default=0
                         )
     parser.add_argument("-x", "--number_of_entities_show_in_x_axis",
                         help="Designate the number of entities displayed in the figure 3 & 4 format. Note that '16' or more may collapse the figure layout.",
                         type=int, default=15
                         )
+    parser.add_argument("-rp", "--result_path", help="path for results", required=True)
 
 
     return parser.parse_args()
@@ -356,7 +357,7 @@ def make_enhance_histogram_comparing_prompt_relevance(relevant_prompt_result_pat
     return df_relevant, df_unrelated
 
 
-def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_article=False):
+def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_paper=False):
     # make "suppress_activation_with_relevant_prompts" histogram
     df_entity_suppress_relevant = df_dict["entity_suppress_relevant"].replace({"凡例": {"活性値を抑制し，知識ニューロンに紐づくプロンプトを予測": "名詞"}})
     df_concept_suppress_relevant = df_dict["concept_suppress_relevant"].replace({"凡例": {"活性値を抑制し，知識ニューロンに紐づくプロンプトを予測": "動詞・形容詞・副詞"}})
@@ -398,7 +399,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_ar
     print(f"figure is saved in {save_path}")
     plt.close()
 
-    if not for_article:
+    if not for_paper:
         # make "suppress_activation_with_unrelated_prompts" histogram
         df_entity_suppress_unrelated = df_dict["entity_suppress_unrelated"].replace({"凡例": {"活性値を抑制し，知識ニューロンとは無関係のプロンプトを予測": "名詞"}})
         df_concept_suppress_unrelated = df_dict["concept_suppress_unrelated"].replace({"凡例": {"活性値を抑制し，知識ニューロンとは無関係のプロンプトを予測": "動詞・形容詞・副詞"}})
@@ -449,18 +450,18 @@ def main():
         except NotImplementedError:
             traceback.print_exc()
             sys.exit(1)
-    elif args.article_figures and args.for_any_entity:
+    elif args.paper_figures and args.for_any_entity:
         try:
-            raise ValueError("These argument can't be set together: '--article_figures' and '--for_any_entity'.")
+            raise ValueError("These argument can't be set together: '--paper_figures' and '--for_any_entity'.")
         except ValueError:
             traceback.print_exc()
             sys.exit(1)
 
     display_number_of_entities = args.number_of_entities_show_in_x_axis
-    if not args.article_figures:
+    if not args.paper_figures:
         entity_index = args.for_any_entity
 
-    result_path = os.path.join("work", "result", args.dataset_type, args.entity_type)
+    result_path = args.result_path
     suppress_relevant = os.path.join(result_path, "suppress_activation_and_relevant_prompts.txt")
     suppress_unrelated = os.path.join(result_path, "suppress_activation_and_unrelated_prompts.txt")
     enhance_relevant = os.path.join(result_path, "enhance_activation_and_relevant_prompts.txt")
@@ -468,8 +469,8 @@ def main():
 
     df_dict_for_comparing_entity_and_concept = defaultdict(int)
 
-    if args.article_figures:
-        root_path_of_saving_graph = os.path.join("work", "figure", "article", args.dataset_type, args.entity_type)
+    if args.paper_figures:
+        root_path_of_saving_graph = os.path.join("work", "figure", "paper", args.dataset_type, args.entity_type)
         os.makedirs(root_path_of_saving_graph, exist_ok=True)
 
         # figure 3, 4, 5, 6
@@ -494,7 +495,7 @@ def main():
         df_dict_for_comparing_entity_and_concept["concept_enhance_unrelated"] = df_enhance_unrelated
 
         # figure 7, 8
-        make_histograms_comparing_entity_and_concept(df_dict_for_comparing_entity_and_concept, root_path_of_saving_graph, for_article=True)
+        make_histograms_comparing_entity_and_concept(df_dict_for_comparing_entity_and_concept, root_path_of_saving_graph, for_paper=True)
 
     else:
         root_path_of_saving_graph = os.path.join("work", "figure", args.dataset_type, args.entity_type)

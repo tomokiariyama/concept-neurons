@@ -28,9 +28,8 @@ def make_parser():
     parser.add_argument('-at', '--adaptive_threshold', help="the threshold value", type=float, default=0.3)
     parser.add_argument('-sp', '--sharing_percentage', help="the threshold for the sharing percentage", type=float, default=0.5)
     parser.add_argument('--rawdataset_filename', type=str, default='test.jsonl')
-    parser.add_argument('--max_words', help="the maximum number of words which each template can have", type=int, default=15)
+    parser.add_argument('-mw', '--max_words', help="the maximum number of words which each template can have", type=int, default=15)
     parser.add_argument('-dp', '--dataset_path', help="the path for the LAMA dataset", required=True)
-    parser.add_argument('-sd', '--saving_directory', help="the path for saving results", default=os.path.join("work", "results"))
 
     return parser.parse_args()
 
@@ -96,7 +95,7 @@ def main():
 
     # Write out the entities used as the dataset in this condition to a file.
     os.makedirs(os.path.join("work", "entities"), exist_ok=True)
-    save_entities_path = os.path.join("work", "entities", f"{args.dataset_type}_{args.entity_type}.txt")
+    save_entities_path = os.path.join("work", "entities", f"{args.dataset_type}_{args.entity_type}_nt_{args.number_of_templates}_at_{args.adaptive_threshold}_mw_{args.max_words}.txt")
     if matched_dataset:
         with open(save_entities_path, mode="w") as fi:
             fi.write(f"# All entities appeared in {args.dataset_type}_{args.entity_type}\n")
@@ -105,7 +104,7 @@ def main():
                 fi.write(entity + "\n")
 
     # to find the knowledge neurons, we need the same 'facts' expressed in multiple different ways, and a ground truth
-    result_path = os.path.join(args.saving_directory, args.dataset_type, args.entity_type)
+    result_path = os.path.join("work", "result", args.dataset_type, args.entity_type, f"nt_{args.number_of_templates}_at_{args.adaptive_threshold}_mw_{args.max_words}")
     os.makedirs(result_path, exist_ok=True)
     suppress_relevant = os.path.join(result_path, "suppress_activation_and_relevant_prompts.txt")
     suppress_unrelated = os.path.join(result_path, "suppress_activation_and_unrelated_prompts.txt")
