@@ -498,7 +498,7 @@ def main():
         make_histograms_comparing_entity_and_concept(df_dict_for_comparing_entity_and_concept, root_path_of_saving_graph, for_paper=True)
 
     else:
-        root_path_of_saving_graph = os.path.join("work", "figure", args.dataset_type, args.entity_type)
+        root_path_of_saving_graph = os.path.join("work", "figure", args.dataset_type, args.entity_type, args.result_path.split("/")[-1])
         os.makedirs(root_path_of_saving_graph, exist_ok=True)
 
         for ground_truth_type in ["all", "entity", "concept"]:
