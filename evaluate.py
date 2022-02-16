@@ -29,7 +29,7 @@ def make_parser():
     parser.add_argument('-sp', '--sharing_percentage', help="the threshold for the sharing percentage", type=float, default=0.5)
     parser.add_argument('--rawdataset_filename', type=str, default='test.jsonl')
     parser.add_argument('-mw', '--max_words', help="the maximum number of words which each template can have", type=int, default=15)
-    parser.add_argument('-dp', '--dataset_path', help="the path for the LAMA dataset", required=True)
+    parser.add_argument('-dp', '--dataset_path', help="the path for the LAMA dataset", default=".")
 
     return parser.parse_args()
 

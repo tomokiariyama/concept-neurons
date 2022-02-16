@@ -3,8 +3,9 @@ Now we are preparing this repository. Please wait.
 
 ## How to Reproduce the Figures
 - At first, please `git clone` this repository.
-- Next, switch to the virtual environment you plan to use while you are in the directory you just `git cloned`(=`concept_neurons`).
+- Next, switch to the virtual environment you plan to use while you are in the directory you just `git cloned`(=`concept-neurons`).
   - Note that the required modules will be installed in that virtual environment.
+  - We have confirmed the operation with python 3.8.
 - Next, execute the following command.
   - `chmod +x setup.sh evaluate_ConceptNet.sh make_graphs.sh reproduce_figures.sh`
 - Finally, please run `./reproduce_figures.sh`.

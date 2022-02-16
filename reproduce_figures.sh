@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source set_dataset_path.sh
+#source dataset_path.sh
 
 ./setup.sh
 ./evaluate_ConceptNet.sh
