@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source set_dataset_path.sh
+source dataset_path.sh
 
 export PYTHONIOENCODING=utf-8
 export PYTHONHASHSEED=0
