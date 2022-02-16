@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+#set -euo pipefail
 
 # download LAMA dataset
 wget -nc https://dl.fbaipublicfiles.com/LAMA/data.zip
