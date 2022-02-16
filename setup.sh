@@ -1,7 +1,7 @@
 #!/bin/sh
 Set -euo pipefail
 
-source dataset_path.sh
+source ./dataset_path.sh
 
 # download LAMA dataset
 mkdir -p ${DATA_DIRECTORY}
