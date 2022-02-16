@@ -1,5 +1,5 @@
 #!/bin/sh
-Set -euo pipefail
+set -euo pipefail
 
 #source ./dataset_path.sh
 
