@@ -1,5 +1,4 @@
 # concept neurons
-Now we are preparing this repository. Please wait.
 
 ## How to Reproduce the Figures
 - At first, please `git clone` this repository.
