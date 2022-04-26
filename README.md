@@ -1,4 +1,5 @@
 # concept neurons
+This repository was created by modifying the codes of https://github.com/EleutherAI/knowledge-neurons.
 
 ## How to Reproduce the Figures
 - At first, please `git clone` this repository.
