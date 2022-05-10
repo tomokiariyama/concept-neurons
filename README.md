@@ -1,6 +1,6 @@
 # concept neurons
 - This repository was created by modifying the codes of https://github.com/EleutherAI/knowledge-neurons.
-- This repository is for https://github.com/tomokiariyama/tomokiariyama.github.io/blob/main/homepage/articles/nlp2022_article.pdf
+- This repository is for https://www.anlp.jp/proceedings/annual_meeting/2022/pdf_dir/C4-3.pdf
 
 ## How to Reproduce the Figures
 - At first, please `git clone` this repository.
