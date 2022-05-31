@@ -374,6 +374,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_pa
     sns.histplot(data=df_suppress_relevant, x="正解を選ぶ確率の減少率[%]", hue="凡例", bins=28, binrange=(-100, 40), ax=ax)
     figure = fig.get_figure()
 
+    breakpoint()
     save_path = os.path.join(root_save_path, f"relevant_suppressed_overlapping_histogram.png")
     figure.savefig(save_path)
     print(f"figure is saved in {save_path}")
@@ -394,6 +395,7 @@ def make_histograms_comparing_entity_and_concept(df_dict, root_save_path, for_pa
     sns.histplot(data=df_enhance_relevant, x="正解を選ぶ確率の増加率[%]", hue="凡例", bins=44, binrange=(-100, 1000), ax=ax)
     figure = fig.get_figure()
 
+    breakpoint()
     save_path = os.path.join(root_save_path, f"relevant_enhanced_overlapping_histogram.png")
     figure.savefig(save_path)
     print(f"figure is saved in {save_path}")

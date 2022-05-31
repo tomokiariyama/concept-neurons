@@ -5,6 +5,7 @@ from logzero import logger
 import sys
 import re
 import unicodedata
+from transformers import BertTokenizer
 
 
 def extract_raw_dataset_from_jsonlines(file_path):
@@ -66,7 +67,7 @@ def extract_raw_dataset_from_jsonlines(file_path):
 
 def extract_matched_dataset(dataset_list, entity_type, num_of_templates, max_words):
     if entity_type == "subject":
-        d = defaultdict(set)
+        d = defaultdict(set)  # key: concept, value: set consists of concept's templates
 
         # At first, replace "[MASK]" to obj, sub to "[MASK]" in the template.
         # Then, append templates as set type to the dictionary whose key is sub.
