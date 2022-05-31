@@ -134,3 +134,4 @@ log/
 venv/
 work/
 .DS_Store
+data/
