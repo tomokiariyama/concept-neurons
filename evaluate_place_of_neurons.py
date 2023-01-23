@@ -44,6 +44,9 @@ def make_parser():
     parser.add_argument('-mw', '--max_words', help="the maximum number of words which each template can have", type=int,
                         default=10)
     parser.add_argument('-dp', '--dataset_path', help="the path for the LAMA dataset", default=".")
+    parser.add_argument('-wou', '--without_unk_concept',
+                        help="use extracted dataset which removed the concepts which is converted to 'unk' by tokenizer.",
+                        action="store_true")
 
     return parser.parse_args()
 
@@ -98,7 +101,9 @@ def main():
     # make dataset by the conditions
     dataset_path = os.path.join(args.dataset_path, "data", args.dataset_type, args.rawdataset_filename)
     raw_dataset = extract_raw_dataset_from_jsonlines(dataset_path)
-    matched_dataset = extract_matched_dataset(raw_dataset, args.entity_type, args.number_of_templates, args.max_words)
+    matched_dataset = extract_matched_dataset(
+        raw_dataset, args.entity_type, args.number_of_templates, args.max_words, args.without_unk_concept
+    )
 
     logger.info('Number of entities covered this time: ' + str(len(matched_dataset.keys())))
     logger.info('')
@@ -118,6 +123,14 @@ def main():
     result_path = os.path.join("work", "result", args.dataset_type, args.entity_type,
                                f"nt_{args.number_of_templates}_at_{args.adaptive_threshold}_mw_{args.max_words}")
     os.makedirs(result_path, exist_ok=True)
+
+    # 活性値の抑制・増幅による確率への影響を記録するファイル
+    suppress_relevant = os.path.join(result_path, "suppress_activation_and_relevant_prompts.txt")
+    suppress_unrelated = os.path.join(result_path, "suppress_activation_and_unrelated_prompts.txt")
+    enhance_relevant = os.path.join(result_path, "enhance_activation_and_relevant_prompts.txt")
+    enhance_unrelated = os.path.join(result_path, "enhance_activation_and_unrelated_prompts.txt")
+
+    # 知識ニューロンの場所を記録するファイル
     result_of_place_of_neurons = os.path.join(result_path, "place_of_neurons.csv")
     result_of_place_of_noun_neurons = os.path.join(result_path, "place_of_noun_neurons.csv")
     result_of_place_of_verb_adjective_adverb_neurons = os.path.join(result_path,
@@ -127,10 +140,16 @@ def main():
     ng_words = ("marijuana", "grenade", "guns", "bigotry", "rifle", "revolver", "pistol", "destruction",
                 "terrorism", "fart", "farting", "urinate", "urinating", "ejaculate", "orgasm", "penis", "copulate",
                 "copulating", "flirt", "flirting", "sex", "reproduce", "reproducing", "fuck", "pee", "poop", "shit")
-    with open(result_of_place_of_neurons, mode="w") as fi, \
-            open(result_of_place_of_noun_neurons, mode="w") as no_fi, \
-            open(result_of_place_of_verb_adjective_adverb_neurons, mode="w") as ve_fi, \
-            open(result_of_place_of_others_pos_neurons, mode="w") as ot_fi:
+    with open(suppress_relevant, mode="w") as sr_fi, open(suppress_unrelated, mode="w") as su_fi, \
+         open(enhance_relevant, mode="w") as er_fi, open(enhance_unrelated, mode="w") as enu_fi, \
+         open(result_of_place_of_neurons, mode="w") as fi, \
+         open(result_of_place_of_noun_neurons, mode="w") as no_fi, \
+         open(result_of_place_of_verb_adjective_adverb_neurons, mode="w") as ve_fi, \
+         open(result_of_place_of_others_pos_neurons, mode="w") as ot_fi:
+        for file_pointer in [sr_fi, su_fi, er_fi, enu_fi]:
+            file_pointer.write("<LEGEND> GROUND_TRUTH: {number_of_refined_neurons}: {before_gt_prob}, {before_argmax_completion}, {before_argmax_prob}: {after_gt_prob}, {after_argmax_completion}, {after_argmax_prob}\n")
+            file_pointer.write("\n")
+
         fi.write("<LEGEND> GROUND_TRUTH,{lists of layer num and neuron's place}\n")
         no_fi.write("<LEGEND> GROUND_TRUTH,{lists of layer num and neuron's place}\n")
         ve_fi.write("<LEGEND> GROUND_TRUTH,{lists of layer num and neuron's place}\n")
@@ -165,8 +184,51 @@ def main():
             )
 
             logger.info('refining done')
-            # number_of_refined_neurons = len(refined_neurons)
+            number_of_refined_neurons = len(refined_neurons)
 
+            # 以下では、知識ニューロンの活性値を抑制したり増幅したりして、概念の出力予測確率への影響を調べる
+            unrelated_prompt = "[MASK] is the official language of the solomon islands"
+            unrelated_ground_truth = "english"
+
+            # suppress the activations at the refined neurons + test the effect on a relevant prompt
+            # 'results_dict' is a dictionary containing the probability of the ground truth being generated before + after modification, as well as other info
+            # 'unpatch_fn' is a function you can use to undo the activation suppression in the model.
+            # By default, the suppression is removed at the end of any function that applies a patch, but you can set 'undo_modification=False',
+            # run your own experiments with the activations / weights still modified, then run 'unpatch_fn' to undo the modifications
+            logger.info('suppress the activations at the refined neurons + test the effect on a relevant prompt')
+            results_dict, unpatch_fn = kn.suppress_knowledge(
+                TEXT, GROUND_TRUTH, refined_neurons
+            )
+            sr_fi.write(
+                f'{GROUND_TRUTH}:: {number_of_refined_neurons}:: {results_dict["before"]["gt_prob"]}, {results_dict["before"]["argmax_completion"]}, {results_dict["before"]["argmax_prob"]}:: {results_dict["after"]["gt_prob"]}, {results_dict["after"]["argmax_completion"]}, {results_dict["after"]["argmax_prob"]}:: {TEXT}\n')
+
+            # suppress the activations at the refined neurons + test the effect on an unrelated prompt
+            logger.info('suppress the activations at the refined neurons + test the effect on an unrelated prompt')
+            results_dict, unpatch_fn = kn.suppress_knowledge(
+                unrelated_prompt,
+                unrelated_ground_truth,
+                refined_neurons,
+            )
+            su_fi.write(
+                f'{GROUND_TRUTH}:: {number_of_refined_neurons}:: {results_dict["before"]["gt_prob"]}, {results_dict["before"]["argmax_completion"]}, {results_dict["before"]["argmax_prob"]}:: {results_dict["after"]["gt_prob"]}, {results_dict["after"]["argmax_completion"]}, {results_dict["after"]["argmax_prob"]}:: {TEXT}\n')
+
+            # enhance the activations at the refined neurons + test the effect on a relevant prompt
+            logger.info('enhance the activations at the refined neurons + test the effect on a relevant prompt')
+            results_dict, unpatch_fn = kn.enhance_knowledge(TEXT, GROUND_TRUTH, refined_neurons)
+            er_fi.write(
+                f'{GROUND_TRUTH}:: {number_of_refined_neurons}:: {results_dict["before"]["gt_prob"]}, {results_dict["before"]["argmax_completion"]}, {results_dict["before"]["argmax_prob"]}:: {results_dict["after"]["gt_prob"]}, {results_dict["after"]["argmax_completion"]}, {results_dict["after"]["argmax_prob"]}:: {TEXT}\n')
+
+            # enhance the activations at the refined neurons + test the effect on an unrelated prompt
+            logger.info('enhance the activations at the refined neurons + test the effect on an unrelated prompt')
+            results_dict, unpatch_fn = kn.enhance_knowledge(
+                unrelated_prompt,
+                unrelated_ground_truth,
+                refined_neurons,
+            )
+            enu_fi.write(
+                f'{GROUND_TRUTH}:: {number_of_refined_neurons}:: {results_dict["before"]["gt_prob"]}, {results_dict["before"]["argmax_completion"]}, {results_dict["before"]["argmax_prob"]}:: {results_dict["after"]["gt_prob"]}, {results_dict["after"]["argmax_completion"]}, {results_dict["after"]["argmax_prob"]}:: {TEXT}\n')
+
+            # ここから先は知識ニューロンの場所を調べるコード
             if GROUND_TRUTH not in ng_words:
                 # 品詞全てをひっくるめた知識ニューロンの場所
                 fi.write(f'#{GROUND_TRUTH}\n')

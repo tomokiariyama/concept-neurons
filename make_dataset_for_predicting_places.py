@@ -10,8 +10,8 @@ def calc_median(layer_num_list):
 
 def main():
     data_path = os.path.join("work", "result", "ConceptNet", "subject", "nt_4_at_0.2_mw_10", "place_of_neurons.csv")
-    os.makedirs(os.path.join("data", "for_predicting_places", "ConceptNet", "subject", "nt_4_at_0.2_mw_10"), exist_ok=True)
-    save_path = os.path.join("data", "for_predicting_places", "ConceptNet", "subject", "nt_4_at_0.2_mw_10", "place_of_neurons.csv")
+    os.makedirs(os.path.join("/work02", "ariyama", "exp2022", "concept_neurons", "data", "for_predicting_places", "ConceptNet", "subject", "nt_4_at_0.2_mw_10"), exist_ok=True)
+    save_path = os.path.join("/work02", "ariyama", "exp2022", "concept_neurons", "data", "for_predicting_places", "ConceptNet", "subject", "nt_4_at_0.2_mw_10", "place_of_neurons.csv")
 
     with open(data_path, "r") as da_fi, open(save_path, "w") as sa_fi:
         # sa_fiには、`<concept>,<layer num>,...,<median of layer nums>`の形で記録する

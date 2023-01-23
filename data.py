@@ -65,9 +65,12 @@ def extract_raw_dataset_from_jsonlines(file_path):
     return dataset_list
 
 
-def extract_matched_dataset(dataset_list, entity_type, num_of_templates, max_words):
+def extract_matched_dataset(dataset_list, entity_type, num_of_templates, max_words, is_remove_unk_concept):
+    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    unk_id = tokenizer.convert_tokens_to_ids("UNK")
+
     if entity_type == "subject":
-        d = defaultdict(set)  # key: concept, value: set consists of concept's templates
+        d = defaultdict(set)  # key: concept(str), value: set consists of concept's templates
 
         # At first, replace "[MASK]" to obj, sub to "[MASK]" in the template.
         # Then, append templates as set type to the dictionary whose key is sub.
@@ -96,9 +99,14 @@ def extract_matched_dataset(dataset_list, entity_type, num_of_templates, max_wor
 
         # Exclude subject entities that do not meet the default number of templates.
         delete_entities = []
-        for sub in d.keys():
-            if len(d[sub]) < num_of_templates:
-                delete_entities.append(sub)
+        if is_remove_unk_concept:
+            for sub in d.keys():
+                if len(d[sub]) < num_of_templates or tokenizer.convert_tokens_to_ids(sub) == unk_id:
+                    delete_entities.append(sub)
+        else:
+            for sub in d.keys():
+                if len(d[sub]) < num_of_templates:
+                    delete_entities.append(sub)
         for delete_key in delete_entities:
             del d[delete_key]
 
@@ -117,9 +125,14 @@ def extract_matched_dataset(dataset_list, entity_type, num_of_templates, max_wor
 
         # Exclude object entities that do not meet the default number of templates.
         delete_entities = []
-        for obj in d.keys():
-            if len(d[obj]) < num_of_templates:
-                delete_entities.append(obj)
+        if is_remove_unk_concept:
+            for obj in d.keys():
+                if len(d[obj]) < num_of_templates or tokenizer.convert_tokens_to_ids(obj) == unk_id:
+                    delete_entities.append(obj)
+        else:
+            for obj in d.keys():
+                if len(d[obj]) < num_of_templates:
+                    delete_entities.append(obj)
         for delete_key in delete_entities:
             del d[delete_key]
 

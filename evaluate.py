@@ -30,6 +30,9 @@ def make_parser():
     parser.add_argument('--rawdataset_filename', type=str, default='test.jsonl')
     parser.add_argument('-mw', '--max_words', help="the maximum number of words which each template can have", type=int, default=15)
     parser.add_argument('-dp', '--dataset_path', help="the path for the LAMA dataset", default=".")
+    parser.add_argument('-wou', '--without_unk_concept',
+                        help="use extracted dataset which removed the concepts which is converted to 'unk' by tokenizer.",
+                        action="store_true")
 
     return parser.parse_args()
 
@@ -88,7 +91,7 @@ def main():
     # make dataset by the conditions
     dataset_path = os.path.join(args.dataset_path, "data", args.dataset_type, args.rawdataset_filename)
     raw_dataset = extract_raw_dataset_from_jsonlines(dataset_path)
-    matched_dataset = extract_matched_dataset(raw_dataset, args.entity_type, args.number_of_templates, args.max_words)
+    matched_dataset = extract_matched_dataset(raw_dataset, args.entity_type, args.number_of_templates, args.max_words, args.without_unk_concept)
 
     logger.info('Number of entities covered this time: ' + str(len(matched_dataset.keys())))
     logger.info('')

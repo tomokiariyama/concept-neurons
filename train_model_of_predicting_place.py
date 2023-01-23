@@ -74,8 +74,8 @@ def get_valid_loss(dataloader, model, loss_fn):
 def save_checkpoint(epoch, model, opt, loss, num):
     digit = len(str(num))  # 0埋めするための桁数を全体で回すエポック数からとってくる
     epoch_for_save = str(epoch).zfill(digit)
-    os.makedirs(os.path.join("/work02", "ariyama", "exp2022", "concept_neurons", "checkpoints", "predicting_places"), exist_ok=True)
-    outfile = os.path.join("/work02", "ariyama", "exp2022", "concept_neurons", "checkpoints", "predicting_places", f'checkpoint_{epoch_for_save}.cpt')
+    os.makedirs(os.path.join("/work02", "ariyama", "exp2022", "concept_neurons", "model", "checkpoints", "predicting_places"), exist_ok=True)
+    outfile = os.path.join("/work02", "ariyama", "exp2022", "concept_neurons", "model", "checkpoints", "predicting_places", f'checkpoint_{epoch_for_save}.cpt')
     torch.save({'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'opt_state_dict': opt.state_dict(),
