@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# MIT License
+# Copyright (c) 2021 Sid Black
 
 from knowledge_neurons import KnowledgeNeurons, initialize_model_and_tokenizer, model_type, ALL_MODELS
 from data import extract_raw_dataset_from_jsonlines, extract_matched_dataset

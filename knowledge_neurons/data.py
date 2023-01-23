@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2021 Sid Black
+
 import json
 import urllib.request
 import collections

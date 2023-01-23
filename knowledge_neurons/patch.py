@@ -1,4 +1,7 @@
 # helper functions for patching torch transformer models
+# MIT License
+# Copyright (c) 2021 Sid Black
+
 import torch
 import torch.nn as nn
 import collections

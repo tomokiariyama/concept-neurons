@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2021 Sid Black
+
 from transformers import (
     BertTokenizer,
     BertLMHeadModel,

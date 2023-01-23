@@ -1,4 +1,7 @@
 # main knowledge neurons class
+# MIT License
+# Copyright (c) 2021 Sid Black
+
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
